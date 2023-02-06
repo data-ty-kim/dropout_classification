@@ -1,5 +1,12 @@
 #%%
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import rc, font_manager
+import seaborn as sns
+import missingno as msno
+
+rc('font', family="NanumGothic")
+plt.style.use('fivethirtyeight')
 
 #%%
 # df_covid 전처리
@@ -75,5 +82,248 @@ df_merge_1.info()
 #%%
 # dataframe 탐색하기
 
-# print(df_merge_1.iloc[1,:])
-print(df_merge_1['REC_STS_CD'].unique())
+# 열 이름 확인
+print(df_merge_1.columns)
+# Index(['구분', 'STD_ID', 'REC_STS_CD', 'REC_STS_NM', 'SEX', 'DEPT_CD', 'DEG_DIV',
+#        'ENT_DIV', 'PROF', 'ENT_YEAR', 'ENT_TERM', 'THE_NUMBER_OF_FUNDS',
+#        'SUM_OF_FUNDS', 'THE_NUMBER_OF_WORKS', 'SUM_SCH'],
+#       dtype='object')
+
+# 학적 상태 확인
+print(sorted(df_merge_1['REC_STS_CD'].unique()))
+# target label:
+# [101, 201, 202, 303, 304, 401, 402, 501]
+# [재학, 휴학, 수료연구(휴학), 수료연구(재학), 수료, 제적, 수료연구(제적), 졸업]
+
+# 성별 확인
+print(sorted(df_merge_1['SEX'].unique()))   # [1, 2]
+
+# 학과 코드 확인
+print(len(df_merge_1['DEPT_CD'].unique()))  # 118개
+
+# 학위 과정 확인
+print(sorted(df_merge_1['DEG_DIV'].unique()))   # [10, 20, 60]
+
+# 입학구분 확인
+print(sorted(df_merge_1['ENT_DIV'].unique()))
+# [101, 113, 114, 116, 117, 121, 201, 203, 204, 207, 208, 209, 901]
+
+# 전공교수 확인
+print(len(df_merge_1['PROF'].unique()))         # 1183명
+
+# 입학연도 확인
+print(sorted(df_merge_1['ENT_YEAR'].unique()))  # [2020~2022]
+
+# 입학학기 확인
+print(sorted(df_merge_1['ENT_TERM'].unique()))  # ['1R', '2R']
+
+# 연구비 받은 횟수
+print(df_merge_1['THE_NUMBER_OF_FUNDS'].min(), df_merge_1['THE_NUMBER_OF_FUNDS'].max())
+# 0~200번까지
+
+# 연구비 합
+print(df_merge_1['SUM_OF_FUNDS'].min(), df_merge_1['SUM_OF_FUNDS'].max())
+# 0 147905000
+
+# 연구 횟수
+print(df_merge_1['THE_NUMBER_OF_WORKS'].min(), df_merge_1['THE_NUMBER_OF_WORKS'].max())
+# 0 18
+
+print(df_merge_1['SUM_SCH'].min(), df_merge_1['SUM_SCH'].max())
+# 0 94428000
+
+#%%
+print(df_merge_1[df_merge_1['구분'] == '졸업생'].loc[:, 'REC_STS_CD'].unique())
+# 501 뿐
+
+#%%
+# EDA
+# target label과 feature 시각화해보기
+
+# key: 'STD_ID'
+# target label:  'REC_STS_CD' (= 'REC_STS_NM')
+# features: ['구분', 'SEX', 'DEPT_CD', 'DEG_DIV',
+#        'ENT_DIV', 'PROF', 'ENT_YEAR', 'ENT_TERM', 'THE_NUMBER_OF_FUNDS',
+#        'SUM_OF_FUNDS', 'THE_NUMBER_OF_WORKS', 'SUM_SCH'],
+
+#%%
+# 결측치 확인
+msno.matrix(df=df_merge_1.iloc[:, :], figsize=(8, 8), color=(0.8, 0.5, 0.2))
+plt.show()
+
+#%%
+# EDA - target label visualization
+f, ax = plt.subplots(1, 1, figsize=(8, 8))
+df_merge_1['REC_STS_CD'].value_counts().plot.pie(
+    autopct='%1.1f%%', ax=ax, shadow=True
+    )
+ax.set_title('Pie plot - Target Label')
+ax.set_ylabel('')
+
+plt.show()
+
+# 302가 너무 적고  304도 많지 않다. 해당 부분 조금 수정이 필요하다
+
+#%%
+# 'SEX'
+f, ax = plt.subplots(1, 1, figsize=(12, 8))
+
+sns.countplot(x='SEX', hue='REC_STS_CD', data=df_merge_1, ax=ax)
+ax.set_title('Sex : REC_STS_CD')
+
+plt.show()
+# 성별에 따른 차이는 없을 수도 있겠단 생각이 든다. 추가적으로 1-비율 확인해볼 것. 2-전처리해서 다시 그래프보기
+# 각 성별 숫자는? 성비는?
+
+#%%
+# target label 전처리하기
+# [101, 201, 202, 303, 304, 401, 402, 501]
+# [재학, 휴학, 수료연구(휴학), 수료연구(재학), 수료, 제적, 수료연구(제적), 졸업]
+condition_1 = (df_merge_1['REC_STS_CD'] == 101) | (df_merge_1['REC_STS_CD'] == 201) | (df_merge_1['REC_STS_CD'] == 202)
+condition_2 = (df_merge_1['REC_STS_CD'] == 401) | (df_merge_1['REC_STS_CD'] == 402)
+condition_3 = (df_merge_1['REC_STS_CD'] == 303) | (df_merge_1['REC_STS_CD'] == 304) | (df_merge_1['REC_STS_CD'] == 501)
+
+df_merge_1['REC_STS_CD'].loc[condition_1] = 1   # 재학&휴학
+df_merge_1['REC_STS_CD'].loc[condition_2] = 2   # 제적
+df_merge_1['REC_STS_CD'].loc[condition_3] = 3   # 졸업&수료
+# print(df_merge_1['REC_STS_CD'].unique())
+
+#%%
+f, ax = plt.subplots(1, 2, figsize=(16, 8))
+df_merge_1['REC_STS_CD'].value_counts().plot.pie(
+    autopct='%1.1f%%', ax=ax[0], shadow=True
+    )
+ax[0].set_title('Pie plot - Target Label')
+ax[0].set_ylabel('')
+
+sns.countplot(x='SEX', hue='REC_STS_CD', data=df_merge_1, ax=ax[1])
+ax[1].set_title('Sex : REC_STS_CD')
+
+plt.show()
+
+# 플롯 모양이 한결 낫다 그런데 제적이 5.4%밖에 안 돼서 분류가 어려울 수도 있겠다는 생각이 든다. (과적합 문제)
+
+
+#%%
+# 'DEPT_CD'
+# df_heatmap= df_merge_1[['REC_STS_CD', 'DEPT_CD', 'STD_ID']].groupby(
+#                 ['REC_STS_CD', 'DEPT_CD'], as_index=False).count()
+#
+# df_heatmap.head()
+# # df_heatmap = df_heatmap.fillna(0).astype('int32')
+#
+# scatter plot으로 그리기
+# plt.scatter(df_heatmap['DEPT_CD'], df_heatmap['REC_STS_CD'],
+#             s=df_heatmap['STD_ID'], cmap='Greens', edgecolors='black', linewidth=2)
+# # # plt.colorbar(label='purchase')
+# plt.show()
+
+# 각 항목별 단과대 TOP10으로 바꾸서 다시 해보기
+
+
+#%%
+# 'DEG_DIV'
+df_scatter = df_merge_1[['REC_STS_CD', 'DEG_DIV', 'STD_ID']].groupby(
+                    ['REC_STS_CD', 'DEG_DIV'], as_index=False).count()
+df_scatter = df_scatter.astype({'REC_STS_CD': 'category', 'DEG_DIV': 'category', 'STD_ID': 'int32'})
+df_scatter.head()
+
+
+plt.scatter(x=df_scatter['DEG_DIV'], y=df_scatter['REC_STS_CD'], s=df_scatter['STD_ID'])
+plt.show()
+# DEG_DIV가 20일 때 제적이 조금 커보인다.
+
+
+#%%
+# 'ENT_DIV'
+df_scatter = df_merge_1[['REC_STS_CD', 'ENT_DIV', 'STD_ID']].groupby(
+                    ['REC_STS_CD', 'ENT_DIV'], as_index=False).count()
+df_scatter = df_scatter.astype({'REC_STS_CD': 'category', 'ENT_DIV': 'category', 'STD_ID': 'int32'})
+# df_scatter.head()
+
+
+plt.scatter(x=df_scatter['ENT_DIV'], y=df_scatter['REC_STS_CD'], s=df_scatter['STD_ID'])
+plt.show()
+
+# ent_div 크기만 봐서는 알 수가 없다. 비율로 확인할 것!
+
+
+#%%
+# 'PROF'
+df_prof = df_merge_1[['REC_STS_CD', 'PROF', 'STD_ID']].groupby(
+                    ['REC_STS_CD', 'PROF'], as_index=False).count().sort_values(by='STD_ID', ascending=False)
+
+# df_merge_1[['PROF', 'STD_ID']].groupby(['PROF'], as_index=False).count().sort_values(by='STD_ID', ascending=False).head()
+
+print(df_prof[df_prof['REC_STS_CD']==2].describe())
+
+# 모든 교수에게 최소 한 명은 제적, 평균은 1.47, 그런데 std가 0.95로 높지 않아서 이걸로 분류 가능할지는 의문 max는 8
+
+#%%
+# 'ENT_YEAR'
+y_position = 1.02
+f, ax = plt.subplots(1, 2, figsize=(18, 8))
+df_merge_1['ENT_YEAR'].value_counts().plot.bar(color=['#CD7F32','#FFDF00','#D3D3D3'], ax=ax[0])
+ax[0].set_title('The Number of Students Entered', y=y_position)
+ax[0].set_ylabel('Count')
+
+sns.countplot(x='ENT_YEAR', hue='REC_STS_CD', data=df_merge_1, ax=ax[1])
+ax[1].set_title('ENT_YEAR : REC_STS_CD', y=y_position)
+plt.show()
+
+
+#%%
+# 'ENT_TERM'
+y_position = 1.02
+f, ax = plt.subplots(1, 2, figsize=(18, 8))
+df_merge_1['ENT_TERM'].value_counts().plot.bar(color=['#CD7F32','#FFDF00','#D3D3D3'], ax=ax[0])
+ax[0].set_title('The Number of Students Entered', y=y_position)
+ax[0].set_ylabel('Count')
+
+sns.countplot(x='ENT_TERM', hue='REC_STS_CD', data=df_merge_1, ax=ax[1])
+ax[1].set_title('ENT_TERM : REC_STS_CD', y=y_position)
+plt.show()
+
+# YEAR랑 TERM은 의미가 없을 듯?
+
+#%%
+# 'THE_NUMBER_OF_FUNDS'
+fig, ax = plt.subplots(1, 1, figsize=(9, 5))
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 1]['THE_NUMBER_OF_FUNDS'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 2]['THE_NUMBER_OF_FUNDS'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 3]['THE_NUMBER_OF_FUNDS'], ax=ax)
+plt.legend(['재학&휴학', '제적', '졸업&수료'])
+plt.show()
+
+
+#%%
+# 'SUM_OF_FUNDS',
+fig, ax = plt.subplots(1, 1, figsize=(9, 5))
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 1]['SUM_OF_FUNDS'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 2]['SUM_OF_FUNDS'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 3]['SUM_OF_FUNDS'], ax=ax)
+plt.legend(['재학&휴학', '제적', '졸업&수료'])
+plt.show()
+
+
+#%%
+# 'THE_NUMBER_OF_WORKS',
+fig, ax = plt.subplots(1, 1, figsize=(9, 5))
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 1]['THE_NUMBER_OF_WORKS'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 2]['THE_NUMBER_OF_WORKS'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 3]['THE_NUMBER_OF_WORKS'], ax=ax)
+plt.legend(['재학&휴학', '제적', '졸업&수료'])
+plt.show()
+
+#%%
+# 'SUM_SCH'],
+fig, ax = plt.subplots(1, 1, figsize=(9, 5))
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 1]['SUM_SCH'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 2]['SUM_SCH'], ax=ax)
+sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 3]['SUM_SCH'], ax=ax)
+plt.legend(['재학&휴학', '제적', '졸업&수료'])
+plt.show()
+
+# 장학금의 효과는 위대했다!
+
+#%%
