@@ -54,10 +54,12 @@ df_sch = pd.read_csv('SCH212.csv', dtype={1: 'int32', 2: 'int64'})
 
 #%%
 # REC032-034
-df_presch = pd.read_csv('REC032-034.csv', usecols=[1,2], low_memory=False)
-
+df_presch = pd.read_csv('REC032-034.csv', usecols=[1, 2], low_memory=False)
 # print(df_presch.head())
 # print(df_presch.info())     # 8429개의 ID, 8349개의 전적대 코드
+
+df_presch['PRESCH_CD'] = df_presch['PRESCH_CD'].apply(lambda x: 1 if x == '00053120' else 0)
+
 
 #%%
 # REC042-044
@@ -75,8 +77,6 @@ df_chg['CHG_DT'] = df_chg['CHG_DT'].astype('datetime64')
     # 152 - 학점교류(국내), 211 - 일반휴학, 212 - 군입대휴학, 311 - 수료, 331 - 수료(복학), 341 - 수료(미등록),
     # 411 - 미등록제적, 412 - 자퇴, 413 - 휴학경과제적, 416 - 제적, 41A - 자퇴제적(사망), 601 - 석·박사통합과정진입,
     # 602 - 석·박사통합과정포기
-
-
 
 # print(df_chg['CHG_DT'].head())
 print(df_chg[140:150])
@@ -105,11 +105,15 @@ df_merge_1 = pd.merge(df_merge_0, df_sch.drop(columns='구분'), how='left',  le
 df_merge_1['SUM_SCH'] = df_merge_1['SUM_SCH'].fillna(0)
 df_merge_1 = df_merge_1.astype({'SUM_SCH': 'int32'})
 
-# df_merge_1.info()
+df_merge_1.info()
 
 #%%
+# dataframe 합치기
+df_merge_2 = pd.merge(df_merge_1.drop(columns='구분'), df_presch, how='left',  left_on='STD_ID', right_on='STD_ID')
+df_merge_3 = pd.merge(df_merge_2, df_chg.drop(columns='구분'), how='left',  left_on='STD_ID', right_on='STD_ID')
 
-
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(df_merge_3.head())
 
 
 #%%
@@ -189,7 +193,7 @@ plt.show()
 # PROF 열에서 결측치인 행만 확인하기
 # with문 써서 여기서만 출력 제한 풀기
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    print(df_merge_1[df_merge_1['PROF'].isnull()].iloc[:,[1,3,4,5,6,7,8,10,11]])
+    print(df_merge_1[df_merge_1['PROF'].isnull()].iloc[:, [1, 3, 4, 5, 6, 7, 8, 10, 11]])
 
 #%%
 f, ax = plt.subplots(1, 1, figsize=(8, 8))
@@ -227,7 +231,7 @@ ax.set_ylabel('')
 
 plt.show()
 
-print('남: ', len(df_merge_1[df_merge_1['SEX']==1]), '여: ', len(df_merge_1[df_merge_1['SEX']==2]))
+print('남: ', len(df_merge_1[df_merge_1['SEX'] == 1]), '여: ', len(df_merge_1[df_merge_1['SEX'] == 2]))
 # 성별에 따른 차이는 없을 수도 있겠단 생각이 든다. 추가적으로 1-비율 확인해볼 것. 2-전처리해서 다시 그래프보기
 # 각 성별 숫자는? 성비는?
 
@@ -350,8 +354,6 @@ plt.show()
 # for i in [101, 113, 114, 116, 117, 121, 201, 203, 204, 207, 208, 209, 901]:
 #     print(len(df_merge_1[df_merge_1['ENT_DIV']==i]))
 
-
-
 f, ax = plt.subplots(1, 4, figsize=(32, 8))
 j = 0
 for i in (101, 201, 204, 901):
@@ -375,7 +377,7 @@ df_prof = df_merge_1[['REC_STS_CD', 'PROF', 'STD_ID']].groupby(
 
 # df_merge_1[['PROF', 'STD_ID']].groupby(['PROF'], as_index=False).count().sort_values(by='STD_ID', ascending=False).head()
 
-print(df_prof[df_prof['REC_STS_CD']==2].describe())
+print(df_prof[df_prof['REC_STS_CD'] == 2].describe())
 
 # 모든 교수에게 최소 한 명은 제적, 평균은 1.47, 그런데 std가 0.95로 높지 않아서 이걸로 분류 가능할지는 의문 max는 8
 
@@ -383,7 +385,7 @@ print(df_prof[df_prof['REC_STS_CD']==2].describe())
 # 'ENT_YEAR'
 y_position = 1.02
 f, ax = plt.subplots(1, 2, figsize=(18, 8))
-df_merge_1['ENT_YEAR'].value_counts().plot.bar(color=['#CD7F32','#FFDF00','#D3D3D3'], ax=ax[0])
+df_merge_1['ENT_YEAR'].value_counts().plot.bar(color=['#CD7F32', '#FFDF00', '#D3D3D3'], ax=ax[0])
 ax[0].set_title('The Number of Students Entered', y=y_position)
 ax[0].set_ylabel('Count')
 
@@ -396,7 +398,7 @@ plt.show()
 # 'ENT_TERM'
 y_position = 1.02
 f, ax = plt.subplots(1, 2, figsize=(18, 8))
-df_merge_1['ENT_TERM'].value_counts().plot.bar(color=['#CD7F32','#FFDF00','#D3D3D3'], ax=ax[0])
+df_merge_1['ENT_TERM'].value_counts().plot.bar(color=['#CD7F32', '#FFDF00', '#D3D3D3'], ax=ax[0])
 ax[0].set_title('The Number of Students Entered', y=y_position)
 ax[0].set_ylabel('Count')
 
