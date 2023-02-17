@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 import seaborn as sns
 import missingno as msno
+import datetime
+from dateutil.relativedelta import relativedelta
 
 rc('font', family="NanumGothic")
 plt.style.use('fivethirtyeight')
@@ -40,7 +42,7 @@ df_nars = pd.read_csv('NARS242.csv',
 df_rec = pd.read_csv('REC012.csv', low_memory=False)
 df_rec = df_rec.astype(dtype={'STD_ID': 'int32', 'SEX': 'category'})
 
-print(df_rec.isna().sum())              # 각 열별 결측치 확인
+# print(df_rec.isna().sum())              # 각 열별 결측치 확인
 # print(len(df_rec['STD_ID']))
 # print(len(df_rec['STD_ID'].unique()))   # 8429개
 
@@ -79,8 +81,34 @@ df_chg['CHG_DT'] = df_chg['CHG_DT'].astype('datetime64')
     # 602 - 석·박사통합과정포기
 
 # print(df_chg['CHG_DT'].head())
-print(df_chg[140:150])
-# print(df_chg.info())
+# print(df_chg[140:150])
+# print(df_chg.info())  # 4774행
+# print(len(df_chg['STD_ID'].unique()))   # 4754개 => 중복값 존재
+
+# # 중복값 제거
+# condition = df_chg.duplicated(subset=['STD_ID'])
+# list_duplicated = list(df_chg.loc[condition]['STD_ID'])
+# df_chg[df_chg['STD_ID'].isin(list_duplicated)]
+
+df_chg.drop(
+    [426, 943, 945, 947, 2007, 2010, 2014, 2089, 2272, 2557, 2831, 2859, 2997, 3239, 3693, 3758, 3826, 4560, 4732, 4734],
+    axis=0, inplace=True
+    )
+
+# print(df_chg.info())    # 4754 행. 중복값 없음.
+
+# print(df_chg.head())
+diff_month = df_chg.iloc[0,7] - datetime.timedelta(days=30)
+print(diff_month.strftime('%Y-%m-%d'))
+
+
+#%%
+# 코로나 환자 기울기 함수 만들기
+def covid_slope(date):
+    date_start = date - datetime.timedelta(days=30)
+
+    pass
+
 
 
 #%%
@@ -96,7 +124,6 @@ df_merge_0 = df_merge_0.astype({'STD_ID': 'int32', 'PROF': 'object', 'THE_NUMBER
                                 'SUM_OF_FUNDS': 'int32', 'THE_NUMBER_OF_WORKS': 'int32'})
 
 # df_merge_0.info()
-# print(df_merge_0[120:130])
 
 #%%
 # df_sch도 합치기
@@ -114,7 +141,6 @@ df_merge_3 = pd.merge(df_merge_2, df_chg.drop(columns='구분'), how='left',  le
 
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     print(df_merge_3.head())
-
 
 #%%
 # dataframe 탐색하기
