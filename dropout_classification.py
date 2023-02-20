@@ -5,7 +5,7 @@ from matplotlib import rc
 import seaborn as sns
 import missingno as msno
 import datetime
-from dateutil.relativedelta import relativedelta
+import math
 
 rc('font', family="NanumGothic")
 plt.style.use('fivethirtyeight')
@@ -104,10 +104,59 @@ print(diff_month.strftime('%Y-%m-%d'))
 
 #%%
 # 코로나 환자 기울기 함수 만들기
-def covid_slope(date):
-    date_start = date - datetime.timedelta(days=30)
+def covid_slope(date_end):
+    # 결측값 예외
+    if pd.isnull(date_end):
+        return 0
+    if date_end > datetime.datetime.strptime('2023-02-02', '%Y-%m-%d'):
+        return 0
+    # 30일 이전 날짜와 각각의 index 추출
+    if date_end < datetime.datetime.strptime('2020-02-19', '%Y-%m-%d'):
+        date_start = df_covid.iloc[0, 0]
+    else:
+        date_start = date_end - datetime.timedelta(days=30)
+    start_index = df_covid[df_covid['date'] == date_start].index[0]
+    end_index = df_covid[df_covid['date'] == date_end].index[0]
+    # 조회된 날짜의 dataframe 추출
+    df_covid_slope = df_covid[['date', 'total']].iloc[start_index : end_index]
+    # 확진자 최대최소값과 각각의 index 추출
+    covid_min = df_covid_slope['total'].min()
+    covid_max = df_covid_slope['total'].max()
+    min_index = df_covid_slope[df_covid_slope['total'] == covid_min].index[-1]
+    max_index = df_covid_slope[df_covid_slope['total'] == covid_max].index[-1]
+    # 기울기 분모 0인 경우 예외 처리
+    if min_index == max_index:
+        return 0
+    # 기울기 계산
+    slope = (covid_max - covid_min) / (max_index - min_index)
 
-    pass
+    return slope
+
+# def covid_slope_2(date_end):
+#     try:
+#         # 30일 이전 날짜와 각각의 index 추출
+#         if date_end < datetime.datetime.strptime('2020-02-19', '%Y-%m-%d'):
+#             date_start = df_covid.iloc[0, 0]
+#         else:
+#             date_start = date_end - datetime.timedelta(days=30)
+#         start_index = df_covid[df_covid['date'] == date_start].index[0]
+#         end_index = df_covid[df_covid['date'] == date_end].index[0]
+#         # 조회된 날짜의 dataframe 추출
+#         df_covid_slope = df_covid[['date', 'total']].iloc[start_index : end_index]
+#         # 확진자 최대최소값과 각각의 index 추출
+#         covid_min = df_covid_slope['total'].min()
+#         covid_max = df_covid_slope['total'].max()
+#         min_index = df_covid_slope[df_covid_slope['total'] == covid_min].index[-1]
+#         max_index = df_covid_slope[df_covid_slope['total'] == covid_max].index[-1]
+#         # 기울기 분모 0인 경우 예외 처리
+#         if min_index == max_index:
+#             return 0
+#         # 기울기 계산
+#         slope = (covid_max - covid_min) / (max_index - min_index)
+#
+#         return slope
+#     except IndexError:
+#         return 0
 
 
 
@@ -142,62 +191,76 @@ df_merge_3 = pd.merge(df_merge_2, df_chg.drop(columns='구분'), how='left',  le
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     print(df_merge_3.head())
 
+
+#%%
+df_merge_3['covid_slope'] = df_merge_3.apply(lambda row: covid_slope(row['CHG_DT']), axis=1)
+# with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+#     print(df_merge_3.head())
+
+#%%
+# condition = (df_merge_3['covid_slope'] == 0) & (pd.isnull(df_merge_3['CHG_DT']) == False)
+# df_merge_3[['CHG_DT', 'covid_slope']][condition]
+
+# with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+#     print(df_merge_3[['REC_CHG_NM', 'CHG_RSN']][df_merge_3['CHG_DT'] > datetime.datetime.strptime('2023-02-02', '%Y-%m-%d')])
+
+
 #%%
 # dataframe 탐색하기
 
 # 열 이름 확인
-print(df_merge_1.columns)
+print(df_merge_3.columns)
 # Index(['구분', 'STD_ID', 'REC_STS_CD', 'REC_STS_NM', 'SEX', 'DEPT_CD', 'DEG_DIV',
 #        'ENT_DIV', 'PROF', 'ENT_YEAR', 'ENT_TERM', 'THE_NUMBER_OF_FUNDS',
 #        'SUM_OF_FUNDS', 'THE_NUMBER_OF_WORKS', 'SUM_SCH'],
 #       dtype='object')
 
 # 학적 상태 확인
-print(sorted(df_merge_1['REC_STS_CD'].unique()))
+print(sorted(df_merge_3['REC_STS_CD'].unique()))
 # target label:
 # [101, 201, 202, 303, 304, 401, 402, 501]
 # [재학, 휴학, 수료연구(휴학), 수료연구(재학), 수료, 제적, 수료연구(제적), 졸업]
 
 # 성별 확인
-print(sorted(df_merge_1['SEX'].unique()))   # [1, 2]
+print(sorted(df_merge_3['SEX'].unique()))   # [1, 2]
 
 # 학과 코드 확인
-print(len(df_merge_1['DEPT_CD'].unique()))  # 118개
+print(len(df_merge_3['DEPT_CD'].unique()))  # 118개
 
 # 학위 과정 확인
-print(sorted(df_merge_1['DEG_DIV'].unique()))   # [10, 20, 60]
+print(sorted(df_merge_3['DEG_DIV'].unique()))   # [10, 20, 60]
 
 # 입학구분 확인
-print(sorted(df_merge_1['ENT_DIV'].unique()))
+print(sorted(df_merge_3['ENT_DIV'].unique()))
 # [101, 113, 114, 116, 117, 121, 201, 203, 204, 207, 208, 209, 901]
 
 # 전공교수 확인
-print(len(df_merge_1['PROF'].unique()))         # 1183명
+print(len(df_merge_3['PROF'].unique()))         # 1183명
 
 # 입학연도 확인
-print(sorted(df_merge_1['ENT_YEAR'].unique()))  # [2020~2022]
+print(sorted(df_merge_3['ENT_YEAR'].unique()))  # [2020~2022]
 
 # 입학학기 확인
-print(sorted(df_merge_1['ENT_TERM'].unique()))  # ['1R', '2R']
+print(sorted(df_merge_3['ENT_TERM'].unique()))  # ['1R', '2R']
 
 # 연구비 받은 횟수
-print(df_merge_1['THE_NUMBER_OF_FUNDS'].min(), df_merge_1['THE_NUMBER_OF_FUNDS'].max())
+print(df_merge_3['THE_NUMBER_OF_FUNDS'].min(), df_merge_3['THE_NUMBER_OF_FUNDS'].max())
 # 0~200번까지
 
 # 연구비 합
-print(df_merge_1['SUM_OF_FUNDS'].min(), df_merge_1['SUM_OF_FUNDS'].max())
+print(df_merge_3['SUM_OF_FUNDS'].min(), df_merge_3['SUM_OF_FUNDS'].max())
 # 0 147905000
 
 # 연구 횟수
-print(df_merge_1['THE_NUMBER_OF_WORKS'].min(), df_merge_1['THE_NUMBER_OF_WORKS'].max())
+print(df_merge_3['THE_NUMBER_OF_WORKS'].min(), df_merge_3['THE_NUMBER_OF_WORKS'].max())
 # 0 18
 
 # 장학금의 합
-print(df_merge_1['SUM_SCH'].min(), df_merge_1['SUM_SCH'].max())
+print(df_merge_3['SUM_SCH'].min(), df_merge_3['SUM_SCH'].max())
 # 0 94428000
 
 #%%
-print(df_merge_1[df_merge_1['구분'] == '졸업생'].loc[:, 'REC_STS_CD'].unique())
+print(df_merge_3[df_merge_1['구분'] == '졸업생'].loc[:, 'REC_STS_CD'].unique())
 # 501 뿐
 
 #%%
@@ -212,18 +275,18 @@ print(df_merge_1[df_merge_1['구분'] == '졸업생'].loc[:, 'REC_STS_CD'].uniqu
 
 #%%
 # 결측치 확인
-msno.matrix(df=df_merge_1.iloc[:, :], figsize=(8, 8), color=(0.8, 0.5, 0.2))
+msno.matrix(df=df_merge_3.iloc[:, :], figsize=(8, 8), color=(0.8, 0.5, 0.2))
 plt.show()
 
 #%%
 # PROF 열에서 결측치인 행만 확인하기
 # with문 써서 여기서만 출력 제한 풀기
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    print(df_merge_1[df_merge_1['PROF'].isnull()].iloc[:, [1, 3, 4, 5, 6, 7, 8, 10, 11]])
+    print(df_merge_3[df_merge_3['PROF'].isnull()].iloc[:, [1, 3, 4, 5, 6, 7, 8, 10, 11]])
 
 #%%
 f, ax = plt.subplots(1, 1, figsize=(8, 8))
-df_missing = df_merge_1[df_merge_1['PROF'].isnull()]
+df_missing = df_merge_3[df_merge_3['PROF'].isnull()]
 df_missing['REC_STS_NM'].value_counts().plot.pie(
     autopct='%1.1f%%', ax=ax, shadow=True
     )
@@ -487,18 +550,67 @@ sns.kdeplot(df_merge_1[df_merge_1['REC_STS_CD'] == 3]['AGE'], ax=ax)
 plt.legend(['재학&휴학', '제적', '졸업&수료'])
 plt.show()
 
+# #%%
+# cummulative_survival_ratio = []
+#
+# 
+# for i in range(1, 80):
+#     condition = (df_merge_1['AGE'] < i)
+#     cummulative_survival_ratio.append(
+#         df_merge_1[df_merge_1[condition].REC_STS_CD == 2].count() / len(df_merge_1[condition]['REC_STS_CD']))
+#
+# plt.figure(figsize=(7, 7))
+# plt.plot(cummulative_survival_ratio)
+# # plt.title('Survival rate change depending on range of Age', y=1.02)
+# # plt.ylabel('Survival rate')
+# # plt.xlabel('Range of Age(0~x)')
+# plt.show()
+
 #%%
-cummulative_survival_ratio = []
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(df_merge_3.head())
+
+#%%
+condition_1 = (df_merge_3['REC_STS_CD'] == 101) | (df_merge_3['REC_STS_CD'] == 201) | (df_merge_3['REC_STS_CD'] == 202)
+condition_2 = (df_merge_3['REC_STS_CD'] == 401) | (df_merge_3['REC_STS_CD'] == 402)
+condition_3 = (df_merge_3['REC_STS_CD'] == 303) | (df_merge_3['REC_STS_CD'] == 304) | (df_merge_3['REC_STS_CD'] == 501)
+
+df_merge_3['REC_STS_CD'].loc[condition_1] = 1   # 재학&휴학
+df_merge_3['REC_STS_CD'].loc[condition_2] = 2   # 제적
+df_merge_3['REC_STS_CD'].loc[condition_3] = 3   # 졸업&수료
+
+df_merge_3['BIRTH'] = df_merge_3['BIRTH'].astype(str)
+df_merge_3['AGE'] = 2022 - df_merge_3['BIRTH'].str[:4].astype('int32')
+df_merge_3['AGE'] = df_merge_3['AGE'].apply(lambda x: math.trunc(x/10))
+
+# condition_4 = df_merge_3['PROF'] > 1.47 + 3*0.95
+df_merge_3['PROF'] = df_merge_3['PROF'].apply(lambda x: 1 if x>1.47 + 3*0.95 else 0)
+df_merge_3['ENT_DIV'] = df_merge_3['ENT_DIV'].apply(lambda x: 500 if x in [121, 203, 207, 208, 209,113,114,116,117] else x)
 
 
-for i in range(1, 80):
-    condition = (df_merge_1['AGE'] < i)
-    cummulative_survival_ratio.append(
-        df_merge_1[df_merge_1[condition].REC_STS_CD == 2].count() / len(df_merge_1[condition]['REC_STS_CD']))
+#%%
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(df_merge_3.head())
 
-plt.figure(figsize=(7, 7))
-plt.plot(cummulative_survival_ratio)
-# plt.title('Survival rate change depending on range of Age', y=1.02)
-# plt.ylabel('Survival rate')
-# plt.xlabel('Range of Age(0~x)')
+#%%
+# One-Hot Encoding
+df_merge_3 = pd.get_dummies(df_merge_3, columns=['REC_STS_CD'], prefix='REC')
+df_merge_3 = pd.get_dummies(df_merge_3, columns=['SEX'], prefix='SEX')
+df_merge_3 = pd.get_dummies(df_merge_3, columns=['DEG_DIV'], prefix='DEG_DIV')
+df_merge_3 = pd.get_dummies(df_merge_3, columns=['ENT_DIV'], prefix='ENT_DIV')
+
+#%%
+df_final = df_merge_3.drop(
+    columns=['REC_STS_NM', 'BIRTH', 'DEPT_CD', 'ENT_YEAR', 'ENT_TERM',
+             'THE_NUMBER_OF_WORKS', 'YEAR', 'TERM', 'REC_CHG_CD', 'REC_CHG_NM', 'CHG_RSN', 'CHG_DT'])
+
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(df_final.head())
+
+#%%
+fig, ax = plt.subplots(1, 1, figsize=(9, 5))
+sns.kdeplot(df_final[df_final['REC_STS_CD'] == 1]['covid_slope'], ax=ax)
+sns.kdeplot(df_final[df_final['REC_STS_CD'] == 2]['covid_slope'], ax=ax)
+sns.kdeplot(df_final[df_final['REC_STS_CD'] == 3]['covid_slope'], ax=ax)
+plt.legend(['재학&휴학', '제적', '졸업&수료'])
 plt.show()
