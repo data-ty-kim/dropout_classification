@@ -13,7 +13,7 @@ plt.style.use('fivethirtyeight')
 #%%
 # df_covid 전처리
 
-df_covid = pd.read_csv('covid-19.csv', low_memory=False, encoding='cp949', thousands=',')
+df_covid = pd.read_csv('../data/raw/covid-19.csv', low_memory=False, encoding='cp949', thousands=',')
 
 df_covid.drop(0, inplace=True)
 df_covid.columns = ['date', 'total', 'domestic', 'foreign', 'death']
@@ -29,7 +29,7 @@ df_covid = df_covid.astype(
 #%%
 # NARS242 전처리
 
-df_nars = pd.read_csv('NARS242.csv',
+df_nars = pd.read_csv('../data/raw/NARS242.csv',
                       dtype={'STD_ID': 'int32', 'THE_NUMBER_OF_FUNDS': 'int32',
                              'SUM_OF_FUNDS': 'int32', 'THE_NUMBER_OF_WORKS': 'int32'})
 
@@ -39,7 +39,7 @@ df_nars = pd.read_csv('NARS242.csv',
 #%%
 # REC012 전처리
 
-df_rec = pd.read_csv('REC012.csv', low_memory=False)
+df_rec = pd.read_csv('../data/raw/REC012.csv', low_memory=False)
 df_rec = df_rec.astype(dtype={'STD_ID': 'int32', 'SEX': 'category'})
 
 # print(df_rec.isna().sum())              # 각 열별 결측치 확인
@@ -49,14 +49,14 @@ df_rec = df_rec.astype(dtype={'STD_ID': 'int32', 'SEX': 'category'})
 #%%
 # SCH212 전처리
 
-df_sch = pd.read_csv('SCH212.csv', dtype={1: 'int32', 2: 'int64'})
+df_sch = pd.read_csv('../data/raw/SCH212.csv', dtype={1: 'int32', 2: 'int64'})
 
 # print(df_sch.info())
 # print(len(df_sch['STD_ID'].unique()))
 
 #%%
 # REC032-034
-df_presch = pd.read_csv('REC032-034.csv', usecols=[1, 2], low_memory=False)
+df_presch = pd.read_csv('../data/raw/REC032-034.csv', usecols=[1, 2], low_memory=False)
 # print(df_presch.head())
 # print(df_presch.info())     # 8429개의 ID, 8349개의 전적대 코드
 
@@ -65,7 +65,7 @@ df_presch['PRESCH_CD'] = df_presch['PRESCH_CD'].apply(lambda x: 1 if x == '00053
 
 #%%
 # REC042-044
-df_chg = pd.read_csv('REC042-044.csv',
+df_chg = pd.read_csv('../data/raw/REC042-044.csv',
                      dtype={'YEAR': 'int32', 'TERM': 'category'})
 
 df_chg['CHG_DT'] = df_chg['CHG_DT'].str[:10]
