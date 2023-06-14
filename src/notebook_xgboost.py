@@ -5,13 +5,12 @@ import pandas as pd
 import numpy as np
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
-from matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 # %%
 dataset = load_breast_cancer()
-x_features = dataset.data # 30개가 넘는다.
+x_features = dataset.data  # 30개가 넘는다.
 y_label = dataset.target
 cancer_df = pd.DataFrame(data=x_features, columns=dataset.feature_names)
 cancer_df['target'] = y_label
@@ -63,11 +62,13 @@ print('predict() 수행 결괏값을 10개만 표시, 예측 확률값으로 표
 print(np.round(pred_probs[:10], 3))
 
 # 예측 확률이 0.5보다 크면 1, 그렇지 않으면 0으로 예측값을 결정해 리스트 객체인 preds에 저장
-preds = [1 if x>0.5 else 0 for x in pred_probs]
+preds = [1 if x > 0.5 else 0 for x in pred_probs]
 print('예측값 10개만 표시:', preds[:10])
 
 # %%
 # get_clf_eval() 함수를 적용해 성능 평가
+
+
 def get_clf_eval(y_test, pred):
     confusion = confusion_matrix(y_test, pred)
     accuracy = accuracy_score(y_test, pred)
@@ -76,6 +77,7 @@ def get_clf_eval(y_test, pred):
     print('오차 행렬')
     print(confusion)
     print(f'정확도: {accuracy:.4f}, 정밀도: {precision:.4f}, 재현율: {recall:.4f}')
+
 
 get_clf_eval(y_test, preds)
 
