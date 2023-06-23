@@ -1,9 +1,13 @@
+# class 상속받아 해결하려다가 실패함.
+# 다음 번에는 상속 class 를 좀 더 정교하게 만들 것.
+
 import pandas as pd
 
 
-class PreDataframe:
-    def __init__(self, csv_dir, datatype, index_col=0):
-        self.df = pd.read_csv(csv_dir, dtype=datatype, index_col=index_col)
+class PreDataframe(pd.DataFrame):
+    def __init__(self, csv_dir, dtype, index_col=0):
+        super().__init__()
+        self.df = pd.read_csv(csv_dir, dtype=dtype, index_col=index_col)
 
     def get_names(self, col_name):
         """
@@ -78,8 +82,25 @@ class PreDataframe:
         self.df = pd.get_dummies(self.df, columns=['ENT_YEAR'])
         self.df.drop(columns='ENT_YEAR', inplace=True)
 
-    # 원핫인코딩 칼럼
-    # columns=['DEPT_CD', 'ADPT_CD', 'SEC_REG', 'DEG_DIV', 'ENT_DIV']
+    def onehot_dept(self):
+        self.df = pd.get_dummies(self.df, columns=['DEPT_CD'])
+        self.df.drop(columns='DEPT_CD', inplace=True)
+
+    def onehot_adpt(self):
+        self.df = pd.get_dummies(self.df, columns=['ADPT_CD'])
+        self.df.drop(columns='ADPT_CD', inplace=True)
+
+    def onehot_sec(self):
+        self.df = pd.get_dummies(self.df, columns=['SEC_REG'])
+        self.df.drop(columns='SEC_REG', inplace=True)
+
+    def onehot_deg(self):
+        self.df = pd.get_dummies(self.df, columns=['DEG_DIV'])
+        self.df.drop(columns='DEG_DIV', inplace=True)
+
+    def onehot_ent(self):
+        self.df = pd.get_dummies(self.df, columns=['ENT_DIV'])
+        self.df.drop(columns='ENT_DIV', inplace=True)
 
     def get_target(self, input_type):
         """
