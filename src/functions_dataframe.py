@@ -87,12 +87,12 @@ def get_target(df, input_type):
         df.drop(columns='REC_STS_CD', inplace=True)
         return df['target']
     elif input_type == 'multi':
-        df['target_multi'] = (
+        df['target'] = (
             df['REC_STS_CD']
             .apply(lambda x: 2 if (x == '401') | (x == '402') else (1 if x in ['303', '304', '501'] else 0))
         )
         df.drop(columns='REC_STS_CD', inplace=True)
-        return df['target_multi']
+        return df['target']
     else:
         print("입력값을 잘못 입력하였습니다. binary 혹은 multi 라고 입력해주세요.")
 
@@ -100,10 +100,10 @@ def get_target(df, input_type):
 def drop_col(df):
     """
     한글명칭 저장된 칼럼은 모두 삭제
-    :return: nothing but act
+    :return: dataframe
     """
     df.drop(labels=['구분', 'STD_ID', 'REC_STS_NM', 'BIRTH', 'DEPT_NM', 'ADPT_NM', 'SEC_NM', 'DEG_NM', 'ENT_NM',
-                    'SEC_REG', 'PROF', 'ENT_YEAR', 'DEPT_CD', 'ADPT_CD', 'DEG_DIV', 'ENT_DIV', 'target'],
+                    'PROF', 'target'],
             axis=1, inplace=True
             )
     return df

@@ -7,9 +7,30 @@ from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
 import matplotlib.pyplot as plt
+from src.common.common_util import path_to_project_root
+from src.functions_dataframe import *
 
 # %%
-dataset = load_breast_cancer()
+# root directory 지정하기
+root_dir = path_to_project_root('dropout_classification')
+
+# %%
+df = pd.read_csv(f'{root_dir}/data/processed/df_dropout_classification.csv',
+                 dtype={'STD_ID': 'object', 'REC_STS_CD': 'category',
+                        'BIRTH': 'int16', 'AGE': 'int16', 'UNIV_FROM': 'category', 'DEPT_CD': 'object',
+                        'ADPT_CD': 'object', 'SEC_REG': 'category', 'DEG_DIV': 'category',
+                        'ENT_DIV': 'category', 'PROF': 'object', 'ENT_TERM': 'category',
+                        'WARNING': 'int16', 'SEG': 'int16', 'COUNT_CHG': 'int16',
+                        'SCHOLARSHIP': 'int64', 'THE_NUMBER_OF_FUNDS': 'int64', 'SUM_OF_FUNDS': 'int64',
+                        'THE_NUMBER_OF_WORKS': 'int16', 'PORTAL_ACCESS': 'int32', 'BB_ACCESS': 'int32'
+                        },
+                 index_col=0
+                 )
+# %%
+
+
+
+# %%
 x_features = dataset.data  # 30개가 넘는다.
 y_label = dataset.target
 cancer_df = pd.DataFrame(data=x_features, columns=dataset.feature_names)
