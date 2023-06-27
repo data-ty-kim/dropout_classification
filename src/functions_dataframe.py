@@ -55,6 +55,7 @@ def one_hot_at_once(df):
     """
     # 1. 학기 바꾸기
     df.replace({'ENT_TERM': {'1R': 0, '2R': 1}}, inplace=True)
+    df = df.astype({'ENT_TERM': 'int8'})
 
     # 2-1. 지나치게 많은 제적학생을 둔 지도교수 list 로 저장
     df_outlier = (

@@ -9,9 +9,9 @@ df = pd.read_csv(f'{root_dir}/data/processed/df_dropout_classification.csv',
                         'BIRTH': 'int16', 'AGE': 'int16', 'UNIV_FROM': 'category', 'DEPT_CD': 'object',
                         'ADPT_CD': 'object', 'SEC_REG': 'category', 'DEG_DIV': 'category',
                         'ENT_DIV': 'category', 'PROF': 'object', 'ENT_TERM': 'category',
-                        'WARNING': 'int16', 'SEG': 'int16', 'COUNT_CHG': 'int16',
+                        'SEQ': 'int16', 'COUNT_CHG': 'int16',
                         'SCHOLARSHIP': 'int64', 'THE_NUMBER_OF_FUNDS': 'int64', 'SUM_OF_FUNDS': 'int64',
-                        'THE_NUMBER_OF_WORKS': 'int16', 'PORTAL_ACCESS': 'int32', 'BB_ACCESS': 'int32'
+                        'THE_NUMBER_OF_WORKS': 'int16', 'GPA': 'float16', 'PORTAL_ACCESS': 'int32', 'BB_ACCESS': 'int32'
                         },
                  index_col=0
                  )

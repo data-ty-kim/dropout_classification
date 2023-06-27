@@ -3,7 +3,6 @@ import xgboost as xgb
 from xgboost import plot_importance
 import pandas as pd
 import numpy as np
-from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
 import matplotlib.pyplot as plt
@@ -15,39 +14,44 @@ from src.functions_dataframe import *
 root_dir = path_to_project_root('dropout_classification')
 
 # %%
+# 데이터 불러오기
 df = pd.read_csv(f'{root_dir}/data/processed/df_dropout_classification.csv',
                  dtype={'STD_ID': 'object', 'REC_STS_CD': 'category',
-                        'BIRTH': 'int16', 'AGE': 'int16', 'UNIV_FROM': 'category', 'DEPT_CD': 'object',
+                        'BIRTH': 'int16', 'AGE': 'int16', 'UNIV_FROM': 'int8', 'DEPT_CD': 'object',
                         'ADPT_CD': 'object', 'SEC_REG': 'category', 'DEG_DIV': 'category',
                         'ENT_DIV': 'category', 'PROF': 'object', 'ENT_TERM': 'category',
-                        'WARNING': 'int16', 'SEG': 'int16', 'COUNT_CHG': 'int16',
+                        'SEQ': 'int16', 'COUNT_CHG': 'int16',
                         'SCHOLARSHIP': 'int64', 'THE_NUMBER_OF_FUNDS': 'int64', 'SUM_OF_FUNDS': 'int64',
-                        'THE_NUMBER_OF_WORKS': 'int16', 'PORTAL_ACCESS': 'int32', 'BB_ACCESS': 'int32'
+                        'THE_NUMBER_OF_WORKS': 'int16', 'GPA': 'float16', 'PORTAL_ACCESS': 'int32', 'BB_ACCESS': 'int32'
                         },
                  index_col=0
                  )
 # %%
-
-
-
-# %%
-x_features = dataset.data  # 30개가 넘는다.
-y_label = dataset.target
-cancer_df = pd.DataFrame(data=x_features, columns=dataset.feature_names)
-cancer_df['target'] = y_label
-
-with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    print(cancer_df.head(3))
+# 재학생, 졸업생 index 따로 저장하기
+index_enrolled = get_index(df, '재학생')
+index_graduated = get_index(df, '졸업생')
 
 # %%
-# Target 이름와 분포 확인
-print(dataset.target_names)
-print(cancer_df['target'].value_counts())
+# 원-핫 인코딩
+df = one_hot_at_once(df)
+# 제적:1, 재학/졸업:0으로 target 칼럼 만들기
+y_label = get_target(df, 'binary')
+# train set 만들기
+x_features = drop_col(df)
 
 # %%
-# 데이터 세트 분할 80:20
-x_train, x_test, y_train, y_test = train_test_split(x_features, y_label, test_size=0.2, random_state=156)
-print(x_train.shape, x_test.shape)
+# 데이터 세트 분할 70:30
+x_train_a, x_test_a, y_train_a, y_test_a = train_test_split(x_features.loc[index_enrolled], y_label.loc[index_enrolled],
+                                                            test_size=0.3, random_state=156)
+x_train_b, x_test_b, y_train_b, y_test_b = train_test_split(x_features.loc[index_graduated], y_label.loc[index_graduated],
+                                                            test_size=0.3, random_state=156)
+
+# %%
+# train, test 데이터셋 만들기
+x_train = pd.concat([x_train_a, x_train_b])
+x_test = pd.concat([x_test_a, x_test_b])
+y_train = pd.concat([y_train_a, y_train_b])
+y_test = pd.concat([y_test_a, y_test_b])
 
 # %%
 # DMatrix 변환
@@ -82,6 +86,7 @@ pred_probs = xgb_model.predict(dtest)
 print('predict() 수행 결괏값을 10개만 표시, 예측 확률값으로 표시됨')
 print(np.round(pred_probs[:10], 3))
 
+# %%
 # 예측 확률이 0.5보다 크면 1, 그렇지 않으면 0으로 예측값을 결정해 리스트 객체인 preds에 저장
 preds = [1 if x > 0.5 else 0 for x in pred_probs]
 print('예측값 10개만 표시:', preds[:10])

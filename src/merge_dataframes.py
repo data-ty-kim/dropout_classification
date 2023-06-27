@@ -5,12 +5,12 @@ from src.common.common_util import path_to_project_root
 root_dir = path_to_project_root('dropout_classification')
 
 # 자료 불러오기
-df_enrolled = pd.read_csv(f'{root_dir}/data/raw/merged_enrolled_std.csv',
+df_enrolled = pd.read_csv(f'{root_dir}/data/raw/merged_enrolled_std_c.csv',
                           dtype={'REC_STS_CD': 'category', 'UNIV_FROM': 'category', 'DEPT_CD': 'object',
                                  'ADPT_CD': 'object', 'SEC_REG': 'category', 'DEG_DIV': 'category',
                                  'ENT_DIV': 'category', 'PROF': 'object', 'ENT_TERM': 'category'}
                           )
-df_graduated = pd.read_csv(f'{root_dir}/data/raw/merged_graduated_std.csv',
+df_graduated = pd.read_csv(f'{root_dir}/data/raw/merged_graduated_std_c.csv',
                            dtype={'REC_STS_CD': 'category', 'UNIV_FROM': 'category', 'DEPT_CD': 'object',
                                   'ADPT_CD': 'object', 'SEC_REG': 'category', 'DEG_DIV': 'category',
                                   'ENT_DIV': 'category', 'PROF': 'object', 'ENT_TERM': 'category'}
