@@ -10,7 +10,10 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
-from sklearn.model_selection import GridSearchCV, cross_val_score, StratifiedKFold, learning_curve, train_test_split
+# from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, learning_curve, train_test_split, cross_validate
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 from src.common.common_util import path_to_project_root
 from src.functions_dataframe import *
 
@@ -51,7 +54,6 @@ x_train_a, x_test_a, y_train_a, y_test_a = train_test_split(x_features.loc[index
 x_train_b, x_test_b, y_train_b, y_test_b = train_test_split(x_features.loc[index_graduated], y_label.loc[index_graduated],
                                                             test_size=0.3, random_state=156)
 
-# %%
 # train, test 데이터셋 만들기
 x_train = pd.concat([x_train_a, x_train_b])
 x_test = pd.concat([x_test_a, x_test_b])
@@ -64,57 +66,103 @@ kfold = StratifiedKFold(n_splits=5)
 random_state = 1
 classifiers = []
 
-# SVM for Classification
-classifiers.append(SVC(random_state=random_state))
-# 의사결정나무
-classifiers.append(DecisionTreeClassifier(random_state=random_state))
-# AdaBoost
-classifiers.append(AdaBoostClassifier(DecisionTreeClassifier(random_state=random_state), random_state=random_state, learning_rate=0.1))
+
+# %%
+# XGBoost
+xgb_wrapper = XGBClassifier(n_estimators=400, learning_rate=0.1, max_depth=3)
+classifiers.append(xgb_wrapper)
+
+# LightGBM
+lgbm_wrapper = LGBMClassifier(n_estimators=400)
+classifiers.append(lgbm_wrapper)
+
+# %%
+# # SVM for Classification
+# classifiers.append(SVC(random_state=random_state))
+# # 의사결정나무
+# classifiers.append(DecisionTreeClassifier(random_state=random_state))
+# # AdaBoost
+# classifiers.append(AdaBoostClassifier(DecisionTreeClassifier(random_state=random_state), random_state=random_state, learning_rate=0.1))
 # Random Forest
 classifiers.append(RandomForestClassifier(random_state=random_state))
 # Extra Tree (혹은 extremely randomized trees)
 classifiers.append(ExtraTreesClassifier(random_state=random_state))
 # Gradient Boosting
 classifiers.append(GradientBoostingClassifier(random_state=random_state))
-# Multiple Layer Perceptron (neural network)
-classifiers.append(MLPClassifier(random_state=random_state))
-# KNN
-classifiers.append(KNeighborsClassifier())
-# Logistic 회귀
-classifiers.append(LogisticRegression(random_state=random_state))
+# # Multiple Layer Perceptron (neural network)
+# classifiers.append(MLPClassifier(random_state=random_state))
+# # KNN
+# classifiers.append(KNeighborsClassifier())
+# # Logistic 회귀
+# classifiers.append(LogisticRegression(random_state=random_state))
 # 선형판별분석 (Linear Discriminant Analysis: LDA)
 classifiers.append(LinearDiscriminantAnalysis())
 
+# %%
 # 교차 검증 수행 후 예측 성능 반환하기
 cv_results = []
+# for classifier in classifiers:
+#     cv_results.append(cross_val_score(classifier, x_train, y=y_train, scoring="accuracy", cv=kfold, n_jobs=16))
 for classifier in classifiers:
-    cv_results.append(cross_val_score(classifier, x_train, y=y_train, scoring="accuracy", cv=kfold, n_jobs=16))
+    cv_results.append(cross_validate(classifier, x_train, y=y_train,
+                                     scoring=["accuracy", "precision", "recall", "f1"], cv=kfold, n_jobs=16))
 
+# %%
 # 성능의 평균과 표준편차 계산하기
-cv_means = []
-cv_std = []
+# cv_means = []
+# cv_std = []
+# for cv_result in cv_results:
+#     cv_means.append(cv_result.mean())
+#     cv_std.append(cv_result.std())
+cv_acc_means = []
+cv_acc_std = []
+cv_pre_means = []
+cv_pre_std = []
+cv_rec_means = []
+cv_rec_std = []
+cv_f1_means = []
+cv_f1_std = []
+
 for cv_result in cv_results:
-    cv_means.append(cv_result.mean())
-    cv_std.append(cv_result.std())
+    cv_acc_means.append(cv_result['test_accuracy'].mean())
+    cv_acc_std.append(cv_result['test_accuracy'].std())
+    cv_pre_means.append(cv_result['test_precision'].mean())
+    cv_pre_std.append(cv_result['test_precision'].std())
+    cv_rec_means.append(cv_result['test_recall'].mean())
+    cv_rec_std.append(cv_result['test_recall'].std())
+    cv_f1_means.append(cv_result['test_f1'].mean())
+    cv_f1_std.append(cv_result['test_f1'].std())
 
 # %%
 # 결과를 DataFrame으로 정리하기
+# cv_res = pd.DataFrame(
+#     {
+#         "CrossValMeans": cv_means, "CrossValerrors": cv_std,
+#         "Algorithm": ["SVC", "DecisionTree", "AdaBoost", "RandomForest", "ExtraTrees", "GradientBoosting",
+#                       "MultipleLayerPerceptron", "KNeighboors", "LogisticRegression", "LinearDiscriminantAnalysis"]
+#     }
+# )
 cv_res = pd.DataFrame(
     {
-        "CrossValMeans": cv_means, "CrossValerrors": cv_std,
-        "Algorithm": ["SVC", "DecisionTree", "AdaBoost", "RandomForest", "ExtraTrees", "GradientBoosting",
-                      "MultipleLayerPerceptron", "KNeighboors", "LogisticRegression", "LinearDiscriminantAnalysis"]
+        "Algorithm": ["XGBoost", "LightGBM", "RandomForest", "ExtraTrees",
+                      "GradientBoosting", "LinearDiscriminantAnalysis"],
+        "CV Acc Means": cv_acc_means, "CV Acc errors": cv_acc_std,
+        "CV Pre Means": cv_pre_means, "CV Pre errors": cv_pre_std,
+        "CV Rec Means": cv_rec_means, "CV Rec errors": cv_rec_std,
+        "CV f1 Means": cv_f1_means, "CV f1 errors": cv_f1_std,
     }
 )
 
-# %%
-fig, ax = plt.subplots(figsize=(16, 9))
-ax = sns.barplot(x="CrossValMeans", y="Algorithm", data=cv_res, palette="Set3", orient="h", **{'xerr': cv_std})
-ax.set_xlabel("Mean Accuracy")
-ax.set_title("Cross validation scores")
-# 값 표기하기
 
-# Add labels to each bar
+# %%
+# Accuracy 그림 그리기
+fig, ax = plt.subplots(figsize=(16, 9))
+# ax = sns.barplot(x="CrossValMeans", y="Algorithm", data=cv_res, palette="Set3", orient="h", **{'xerr': cv_std})
+ax = sns.barplot(x="CV Acc Means", y="Algorithm", data=cv_res, palette="Set3", orient="h", **{'xerr': cv_acc_std})
+ax.set_xlabel("Mean Accuracy")
+ax.set_title("Cross validation scores: Accuracy")
+
+# 값 표기하기
 for p in ax.patches:
     ax.annotate(
         format(p.get_width(), '.4f'),
@@ -126,8 +174,63 @@ for p in ax.patches:
 plt.show()
 
 # %%
+# Precision 그림 그리기
+fig, ax = plt.subplots(figsize=(16, 9))
+ax = sns.barplot(x="CV Pre Means", y="Algorithm", data=cv_res, palette="Set3", orient="h", **{'xerr': cv_pre_std})
+ax.set_xlabel("Mean Precision")
+ax.set_title("Cross validation scores: Precision")
+
+# 값 표기하기
+for p in ax.patches:
+    ax.annotate(
+        format(p.get_width(), '.4f'),
+        (p.get_width() - 0.07, p.get_y() + p.get_height() / 2.),
+        ha='right',
+        va='center'
+    )
+
+plt.show()
+
+# %%
+# Recall 그림 그리기
+fig, ax = plt.subplots(figsize=(16, 9))
+ax = sns.barplot(x="CV Rec Means", y="Algorithm", data=cv_res, palette="Set3", orient="h", **{'xerr': cv_rec_std})
+ax.set_xlabel("Mean Recall")
+ax.set_title("Cross validation scores: Recall")
+
+# 값 표기하기
+for p in ax.patches:
+    ax.annotate(
+        format(p.get_width(), '.4f'),
+        (p.get_width() - 0.07, p.get_y() + p.get_height() / 2.),
+        ha='right',
+        va='center'
+    )
+
+plt.show()
+
+# %%
+# F1 그림 그리기
+fig, ax = plt.subplots(figsize=(16, 9))
+ax = sns.barplot(x="CV f1 Means", y="Algorithm", data=cv_res, palette="Set3", orient="h", **{'xerr': cv_f1_std})
+ax.set_xlabel("Mean F1")
+ax.set_title("Cross validation scores: F1")
+
+# 값 표기하기
+for p in ax.patches:
+    ax.annotate(
+        format(p.get_width(), '.4f'),
+        (p.get_width() - 0.05, p.get_y() + p.get_height() / 2.),
+        ha='right',
+        va='center'
+    )
+
+plt.show()
+
+
+# %%
 # 내일 할 거: RandomForest, ExtraTrees, GradientBoosting, LinearDiscriminantAnalysis만 남기고
-#  나머지는 XGBOOST, LightGBM 추가해서 성능 비교하기 (정확도 정밀도 재현율 f1 다 측정하기)
+# 나머지는 XGBOOST, LightGBM 추가해서 성능 비교하기 (정확도 정밀도 재현율 f1 다 측정하기)
 #  그런 다음에
 # ExtraTrees
 # RandomForest
