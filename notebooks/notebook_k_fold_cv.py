@@ -229,10 +229,5 @@ plt.show()
 
 
 # %%
-# 내일 할 거: RandomForest, ExtraTrees, GradientBoosting, LinearDiscriminantAnalysis만 남기고
-# 나머지는 XGBOOST, LightGBM 추가해서 성능 비교하기 (정확도 정밀도 재현율 f1 다 측정하기)
-#  그런 다음에
-# ExtraTrees
-# RandomForest
-# GradientBoosting 랑 나머지 둘 중에서 성능 제일 좋은 셋 가지고 feature 중요한 거 찾아보기
-# 아 그리고 제일 좋은 놈 셋 중에서 하이퍼파라미터 튜닝해보기
+# ExtraTrees, RandomForest, GradientBoosting 랑 나머지 둘 중에서 성능 제일 좋은 셋 가지고 feature 중요한 거 찾아보기
+# 제일 좋은 모델 셋 중에서 하이퍼파라미터 튜닝해보기
