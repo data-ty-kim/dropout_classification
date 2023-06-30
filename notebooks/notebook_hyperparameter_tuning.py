@@ -53,17 +53,43 @@ y_test = pd.concat([y_test_a, y_test_b])
 # Stratified K 겹 교차 검증
 kfold = StratifiedKFold(n_splits=5)
 random_state = 1
-classifiers = []
-
 
 # %%
+# 분류기 모으기
+classifiers = []
+
 # XGBoost
-xgb_wrapper = XGBClassifier(n_estimators=400, learning_rate=0.1, max_depth=3, random_state=random_state)
+xgb_wrapper = XGBClassifier(n_estimators=400, random_state=random_state)
 classifiers.append(xgb_wrapper)
 
-# LightGBM
-lgbm_wrapper = LGBMClassifier(n_estimators=400)
-classifiers.append(lgbm_wrapper)
+# # LightGBM
+# lgbm_wrapper = LGBMClassifier(n_estimators=400, random_state=random_state)
+# classifiers.append(lgbm_wrapper)
+#
+# # Gradient Boosting
+# classifiers.append(GradientBoostingClassifier(random_state=random_state))
 
-# Gradient Boosting
-classifiers.append(GradientBoostingClassifier(random_state=random_state))
+# %%
+# Parameter Tuning
+xgb_params = {
+    'learning_rate': [0.01, 0.2],
+    'max_depth': [3, 7],
+    'objective': ['binary:logistic', 'binary:logitraw', 'binary:hinge'],
+    'eval_metric': ['logloss', 'error'],
+    'min-child_weight': [1, 3],
+    'colsample_bytree': [0.5, 0.75]
+}
+
+# %%
+gridcv = GridSearchCV(xgb_wrapper, param_grid=xgb_params, cv=kfold, scoring="f1", n_jobs=16, verbose=1)
+gridcv.fit(x_train, y_train, early_stopping_rounds=100, eval_set=[(x_train, y_train), (x_test, y_test)])
+
+print('GridSearchCV 최적 매개변수:', gridcv.best_params_)
+print('GridSearchCV 최고 f1: {0:.4f}'.format(gridcv.best_score_))
+
+
+# GridSearchCV 최적 매개변수:
+# {'colsample_bytree': 0.5, 'eval_metric': 'logloss', 'learning_rate': 0.01,
+# 'max_depth': 3, 'min-child_weight': 1, 'objective': 'binary:logitraw'}
+# GridSearchCV 최고 정밀도: 1.0000
+# https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor.set_params
