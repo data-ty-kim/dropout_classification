@@ -60,6 +60,9 @@ x_test = pd.concat([x_test_a, x_test_b])
 y_train = pd.concat([y_train_a, y_train_b])
 y_test = pd.concat([y_test_a, y_test_b])
 
+# %% 
+# 스케일링 하기
+
 # %%
 # Stratified K 겹 교차 검증
 kfold = StratifiedKFold(n_splits=5)

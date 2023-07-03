@@ -55,37 +55,33 @@ kfold = StratifiedKFold(n_splits=5)
 random_state = 1
 
 # %%
-# 분류기 모으기
-classifiers = []
+# 하이퍼파라미터 튜닝할 분류기
 
 # XGBoost
-xgb_wrapper = XGBClassifier(n_estimators=400, random_state=random_state)
-classifiers.append(xgb_wrapper)
+xgb_wrapper = XGBClassifier(n_estimators=400, random_state=random_state, early_stopping_rounds=100)
 
-# # LightGBM
-# lgbm_wrapper = LGBMClassifier(n_estimators=400, random_state=random_state)
-# classifiers.append(lgbm_wrapper)
-#
-# # Gradient Boosting
-# classifiers.append(GradientBoostingClassifier(random_state=random_state))
+# LightGBM
+lgbm_wrapper = LGBMClassifier(n_estimators=400, random_state=random_state, early_stopping_rounds=100)
+
+# Gradient Boosting
+gb_classifier = GradientBoostingClassifier(n_estimators=400, random_state=random_state, n_iter_no_change=100)
 
 # %%
-# Parameter Tuning
+# XGBoost Parameter Tuning
 xgb_params = {
     'learning_rate': [0.01, 0.2],
     'max_depth': [3, 7],
     'objective': ['binary:logistic', 'binary:logitraw', 'binary:hinge'],
     'eval_metric': ['logloss', 'error'],
-    'min-child_weight': [1, 3],
+    'min_child_weight': [1, 3],
     'colsample_bytree': [0.5, 0.75]
 }
 
-# %%
-gridcv = GridSearchCV(xgb_wrapper, param_grid=xgb_params, cv=kfold, scoring="f1", n_jobs=16, verbose=1)
-gridcv.fit(x_train, y_train, early_stopping_rounds=100, eval_set=[(x_train, y_train), (x_test, y_test)])
+gridcv = GridSearchCV(xgb_wrapper, param_grid=xgb_params, cv=kfold, scoring="recall", n_jobs=16)
+gridcv.fit(x_train, y_train, eval_set=[(x_train, y_train), (x_test, y_test)])
 
 print('GridSearchCV 최적 매개변수:', gridcv.best_params_)
-print('GridSearchCV 최고 f1: {0:.4f}'.format(gridcv.best_score_))
+print('GridSearchCV 최고 재현율: {0:.4f}'.format(gridcv.best_score_))
 
 
 # GridSearchCV 최적 매개변수:
@@ -93,3 +89,85 @@ print('GridSearchCV 최고 f1: {0:.4f}'.format(gridcv.best_score_))
 # 'max_depth': 3, 'min-child_weight': 1, 'objective': 'binary:logitraw'}
 # GridSearchCV 최고 정밀도: 1.0000
 # https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor.set_params
+
+# GridSearchCV 최적 매개변수:
+# {'colsample_bytree': 0.75, 'eval_metric': 'error', 'learning_rate': 0.2,
+# 'max_depth': 7, 'min-child_weight': 1, 'objective': 'binary:logistic'}
+# GridSearchCV 최고 f1: 0.7455
+
+# GridSearchCV 최적 매개변수:
+# {'colsample_bytree': 0.5, 'eval_metric': 'error', 'learning_rate': 0.2,
+# 'max_depth': 3, 'min-child_weight': 1, 'objective': 'binary:logistic'}
+# GridSearchCV 최고 재현율: 0.6565
+
+# %%
+# lightGBM Parameter Tuning
+lgbm_params = {
+    'learning_rate': [0.01, 0.2],
+    'num_leaves': [32, 64],
+    'max_depth': [128, 160],
+    'min_child_weight': [1, 3],
+    'min_child_samples': [60, 100],
+    'subsample': [0.8, 1],
+    'colsample_bytree': [0.5, 1]
+}
+
+gridcv = GridSearchCV(lgbm_wrapper, param_grid=lgbm_params, cv=kfold, scoring="f1", n_jobs=16)
+gridcv.fit(x_train, y_train, eval_set=[(x_train, y_train), (x_test, y_test)])
+
+print('lightGBM 최적 매개변수:', gridcv.best_params_)
+print('lightGBM 최고 f1: {0:.4f}'.format(gridcv.best_score_))
+
+# lightGBM 최적 매개변수:
+# {'colsample_bytree': 0.5, 'learning_rate': 0.01, 'max_depth': 128,
+#  'min_child_samples': 100, 'min_child_weight': 1, 'num_leaves': 32, 'subsample': 0.8}
+# lightGBM 최고 정밀도: 0.9228
+
+# lightGBM 최적 매개변수:
+# {'colsample_bytree': 1, 'learning_rate': 0.2, 'max_depth': 128,
+# 'min_child_samples': 60, 'min_child_weight': 1, 'num_leaves': 32, 'subsample': 0.8}
+# lightGBM 최고 재현율: 0.6315
+
+# lightGBM 최적 매개변수:
+# {'colsample_bytree': 1, 'learning_rate': 0.01, 'max_depth': 128,
+# 'min_child_samples': 60, 'min_child_weight': 3, 'num_leaves': 32, 'subsample': 0.8}
+# lightGBM 최고 f1: 0.7299
+
+# %%
+# Gradient Boosting Classifier Parameter Tuning
+gb_params = {
+    'learning_rate': [0.01, 0.05, 0.1, 0.15, 0.2],
+    'subsample': [0.6, 0.7, 0.75, 0.8, 0.85, 0.9],
+    'max_depth': range(3, 8, 1)
+}
+
+gridcv = GridSearchCV(gb_classifier, param_grid=gb_params, cv=kfold, scoring="accuracy", n_jobs=16, verbose=1)
+gridcv.fit(x_train, y_train)
+
+df_gridcv_gb = pd.DataFrame(
+    data=gridcv.best_params_,
+    columns=['score', 'learning_rate', 'subsample', 'max_depth'],
+    index=['accuracy']
+)
+df_gridcv_gb.loc['accuracy', 'score'] = gridcv.best_score_
+
+gridcv = GridSearchCV(gb_classifier, param_grid=gb_params, cv=kfold, scoring="precision", n_jobs=16, verbose=1)
+gridcv.fit(x_train, y_train)
+
+df_gridcv_gb.loc['precision'] = gridcv.best_params_
+df_gridcv_gb.loc['precision', 'score'] = gridcv.best_score_
+
+gridcv = GridSearchCV(gb_classifier, param_grid=gb_params, cv=kfold, scoring="recall", n_jobs=16, verbose=1)
+gridcv.fit(x_train, y_train)
+
+df_gridcv_gb.loc['recall'] = gridcv.best_params_
+df_gridcv_gb.loc['recall', 'score'] = gridcv.best_score_
+
+gridcv = GridSearchCV(gb_classifier, param_grid=gb_params, cv=kfold, scoring="f1", n_jobs=16, verbose=1)
+gridcv.fit(x_train, y_train)
+
+df_gridcv_gb.loc['f1'] = gridcv.best_params_
+df_gridcv_gb.loc['f1', 'score'] = gridcv.best_score_
+
+print('GBM 최적 매개변수와 점수:')
+print(df_gridcv_gb)
