@@ -126,3 +126,23 @@ print(f"Time elapsed {end - start: .5f} sec", '\n')
 print('===================================================')
 print('XGBoost 최적 매개변수와 점수:')
 print(df_gridcv_gb)
+
+# Fitting 5 folds for each of 810 candidates, totalling 4050 fits
+
+# Hyperparameter tuning for Accuracy
+# Time elapsed  1322.34319 sec
+
+# Hyperparameter tuning for Precision
+# Time elapsed  1317.51538 sec
+
+# Hyperparameter tuning for Recall
+# Time elapsed  1341.89355 sec
+
+# Hyperparameter tuning for F1
+# Time elapsed  1316.49173 sec
+
+#               score  learning_rate  max_depth        objective eval_metric   min_child_weight  colsample_bytree
+# accuracy   0.974402           0.10          5  binary:logistic       error                  2              0.50
+# precision       1.0           0.01          3  binary:logitraw     logloss                  1              0.50
+# recall     0.670396           0.10          3     binary:hinge     logloss                  1              0.75
+# f1         0.758445           0.10          5  binary:logistic       error                  2              0.50
