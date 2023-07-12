@@ -1,10 +1,9 @@
 # %%
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split, cross_validate
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
+import time
 from src.common.common_util import path_to_project_root
 from src.functions_dataframe import *
 
@@ -58,7 +57,8 @@ random_state = 1
 # 하이퍼파라미터 튜닝할 분류기
 
 # XGBoost
-xgb_wrapper = XGBClassifier(n_estimators=400, random_state=random_state, early_stopping_rounds=100)
+xgb_wrapper = XGBClassifier(n_estimators=400, random_state=random_state, early_stopping_rounds=100,
+                            tree_method='gpu_hist', gpu_id=-1)
 
 # LightGBM
 lgbm_wrapper = LGBMClassifier(n_estimators=400, random_state=random_state, early_stopping_rounds=100)
@@ -77,11 +77,21 @@ xgb_params = {
     'colsample_bytree': [0.5, 0.75]
 }
 
-gridcv = GridSearchCV(xgb_wrapper, param_grid=xgb_params, cv=kfold, scoring="recall", n_jobs=16)
-gridcv.fit(x_train, y_train, eval_set=[(x_train, y_train), (x_test, y_test)])
+list_scoring = ['accuracy', 'precision', 'recall', 'f1']
+
+start = time.time()
+
+gridcv = GridSearchCV(xgb_wrapper, param_grid=xgb_params, cv=kfold, scoring=list_scoring,
+                      refit='accuracy', n_jobs=16, verbose=1)
+gridcv.fit(x_train, y_train, eval_set=[(x_train, y_train), (x_test, y_test)], verbose=0)
+
+end = time.time()
+
+print("*** Done ***")
+print(f"Time elapsed {end - start: .5f} sec", '\n')
 
 print('GridSearchCV 최적 매개변수:', gridcv.best_params_)
-print('GridSearchCV 최고 재현율: {0:.4f}'.format(gridcv.best_score_))
+print('GridSearchCV 최고 scoring: {0:.4f}'.format(gridcv.best_score_))
 
 
 # GridSearchCV 최적 매개변수:
@@ -112,7 +122,7 @@ lgbm_params = {
     'colsample_bytree': [0.5, 1]
 }
 
-gridcv = GridSearchCV(lgbm_wrapper, param_grid=lgbm_params, cv=kfold, scoring="f1", n_jobs=16)
+gridcv = GridSearchCV(lgbm_wrapper, param_grid=lgbm_params, cv=kfold, scoring="f1", refit='accuracy', n_jobs=16)
 gridcv.fit(x_train, y_train, eval_set=[(x_train, y_train), (x_test, y_test)])
 
 print('lightGBM 최적 매개변수:', gridcv.best_params_)
@@ -141,7 +151,7 @@ gb_params = {
     'max_depth': range(3, 8, 1)
 }
 
-gridcv = GridSearchCV(gb_classifier, param_grid=gb_params, cv=kfold, scoring="accuracy", n_jobs=16, verbose=1)
+gridcv = GridSearchCV(gb_classifier, param_grid=gb_params, cv=kfold, scoring="accuracy", n_jobs=16)
 gridcv.fit(x_train, y_train)
 
 df_gridcv_gb = pd.DataFrame(
