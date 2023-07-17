@@ -111,3 +111,4 @@ get_clf_eval(y_test, preds)
 # 내장된 시각화 기능
 fig, ax = plt.subplots(figsize=(10, 12))
 plot_importance(xgb_model, ax=ax)
+fig.show()
