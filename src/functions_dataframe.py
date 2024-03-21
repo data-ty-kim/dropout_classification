@@ -46,7 +46,7 @@ def get_index(df, student_condition):
         return df[df['구분'] == student_condition].index
 
 
-def one_hot_at_once(df):
+def one_hot_at_once(df, dummy=True):
     """
     1. 'ENT_TERM'에서 '1R'은 0으로 '2R'은 1로 변환
     2. 교수 칼럼을 없애고, 제적생이 많은 지도교수, 지도교수가 없는 경우, 일반적인 경우 셋으로 나눈 onehot encoding 진행
@@ -73,8 +73,11 @@ def one_hot_at_once(df):
     df['PROF_2'] = df['PROF'].apply(lambda x: 1 if x in list_prof else 0)
 
     # 3. 연도, 학과명, 단과대, 계열, 학위과정, 입학전형 바꾸기
-    return pd.get_dummies(df, columns=['ENT_YEAR', 'DEPT_CD', 'ADPT_CD', 'SEC_REG', 'DEG_DIV', 'ENT_DIV'])
+    if dummy is True:
+        return pd.get_dummies(df, columns=['ENT_YEAR', 'DEPT_CD', 'ADPT_CD', 'SEC_REG', 'DEG_DIV', 'ENT_DIV'])
 
+    else:
+        return df
 
 def get_target(df, input_type):
     """
