@@ -74,7 +74,7 @@ def one_hot_at_once(df, dummy=True):
 
     # 3. 연도, 학과명, 단과대, 계열, 학위과정, 입학전형 바꾸기
     if dummy is True:
-        return pd.get_dummies(df, columns=['ENT_YEAR', 'DEPT_CD', 'ADPT_CD', 'SEC_REG', 'DEG_DIV', 'ENT_DIV'])
+        return pd.get_dummies(df, columns=['DEPT_CD', 'ADPT_CD', 'SEC_REG', 'DEG_DIV', 'ENT_DIV'])
 
     else:
         return df
